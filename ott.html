@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> Attendance System</title>
+<style>
+  /* BODY & HEADER */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: #111;
+    color: #fff;
+    overflow-x: hidden;
+  }
+
+  header {
+    background: linear-gradient(45deg,#0f2027,#203a43,#2c5364);
+    color: #fff;
+    text-align: center;
+    padding: 25px 10px;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+    animation: headerGlow 2s infinite alternate;
+  }
+
+  @keyframes headerGlow {
+    0% { text-shadow: 0 0 5px #0ff, 0 0 10px #0ff; }
+    50% { text-shadow: 0 0 10px #0ff, 0 0 20px #0ff; }
+    100% { text-shadow: 0 0 15px #0ff, 0 0 25px #0ff; }
+  }
+
+  /* CONTAINER */
+  .container {
+    max-width: 1100px;
+    margin: 20px auto;
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,255,255,0.2);
+    transform-style: preserve-3d;
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
+    50% { transform: translateY(-10px) rotateX(2deg) rotateY(2deg); }
+    100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
+  }
+
+  h2,h3 {
+    margin: 15px 0;
+    text-align: center;
+    color: #0ff;
+    animation: fadeIn 1s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: scale(0.8);}
+    100% { opacity: 1; transform: scale(1);}
+  }
+
+  /* INPUTS & BUTTONS */
+  input, select {
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 10px;
+    border: 2px solid #0ff;
+    background: #222;
+    color: #0ff;
+    width: calc(50% - 20px);
+    transition: 0.3s;
+    font-size: 16px;
+  }
+  input:focus, select:focus { border-color: #0ff; box-shadow: 0 0 10px #0ff; outline:none; }
+
+  button {
+    padding: 12px 25px;
+    border-radius: 15px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(45deg,#0ff,#00f);
+    color: #111;
+    font-size: 16px;
+    margin: 10px 0;
+    box-shadow: 0 5px 15px rgba(0,255,255,0.5);
+    transition: all 0.3s;
+  }
+  button:hover {
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 15px 30px rgba(0,255,255,0.8);
+  }
+
+  /* TABLES */
+  table {
+    width:100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    border-radius: 15px;
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 8px 20px rgba(0,255,255,0.2);
+    transform-style: preserve-3d;
+    transition: 0.3s;
+  }
+
+  th, td {
+    padding:12px;
+    text-align:center;
+    transition: 0.3s;
+    color: #0ff;
+  }
+
+  th {
+    background: linear-gradient(45deg,#0ff,#00f);
+    color:#111;
+    font-size:16px;
+  }
+
+  tr:hover { background: rgba(0,255,255,0.1); transform: scale(1.01); }
+
+  .present { color:#0f0; font-weight:bold; }
+  .absent { color:#f00; font-weight:bold; }
+  .delete { background: linear-gradient(45deg,#f00,#900); }
+  .delete:hover { transform: scale(1.1); box-shadow:0 10px 20px rgba(255,0,0,0.8); }
+
+</style>
+</head>
+<body>
+
+<header> Attendance System</header>
+
+<div class="container">
+
+<h2>Add Student (One Time Only)</h2>
+<input id="name" placeholder="Student Name">
+<input id="roll" placeholder="Roll Number">
+<button onclick="addStudent()">Add Student</button>
+
+<h2>Mark Daily Attendance</h2>
+<input type="date" id="date">
+
+<table>
+<thead>
+<tr><th>Name</th><th>Roll No</th><th>Status</th><th>Action</th></tr>
+</thead>
+<tbody id="studentTable"></tbody>
+</table>
+<button onclick="saveAttendance()">Save Attendance</button>
+
+<h2>Student Attendance Percentage</h2>
+<table>
+<thead>
+<tr><th>Name</th><th>Roll No</th><th>Attendance %</th></tr>
+</thead>
+<tbody id="percentTable"></tbody>
+</table>
+
+<h2>Date-wise Attendance History</h2>
+<input type="date" id="historyDate">
+<button onclick="viewHistory()">View History</button>
+<table>
+<thead>
+<tr><th>Name</th><th>Roll No</th><th>Date</th><th>Status</th></tr>
+</thead>
+<tbody id="historyTable"></tbody>
+</table>
+
+</div>
+
+<script>
+let students = JSON.parse(localStorage.getItem("students")) || [];
+let attendance = JSON.parse(localStorage.getItem("attendance")) || [];
+
+function saveData() {
+  localStorage.setItem("students", JSON.stringify(students));
+  localStorage.setItem("attendance", JSON.stringify(attendance));
+}
+
+function addStudent() {
+  let name = document.getElementById("name").value.trim();
+  let roll = document.getElementById("roll").value.trim();
+  if(!name || !roll){ alert("Enter name and roll number"); return; }
+  if(students.some(s=>s.roll===roll)){ alert("Roll number exists"); return; }
+  students.push({name,roll});
+  saveData(); renderStudents();
+  document.getElementById("name").value=""; document.getElementById("roll").value="";
+}
+
+function renderStudents(){
+  let table=document.getElementById("studentTable");
+  table.innerHTML="";
+  students.forEach((s,i)=>{
+    table.innerHTML += `<tr>
+      <td>${s.name}</td>
+      <td>${s.roll}</td>
+      <td><select id="status${i}"><option value="Present">Present</option><option value="Absent">Absent</option></select></td>
+      <td><button class="delete" onclick="deleteStudent(${i})">Delete</button></td>
+    </tr>`;
+  });
+  renderPercentage();
+}
+
+function saveAttendance(){
+  let date=document.getElementById("date").value;
+  if(!date){ alert("Select a date"); return; }
+  attendance = attendance.filter(a=>a.date!==date);
+  students.forEach((s,i)=>{
+    attendance.push({name:s.name,roll:s.roll,date:date,status:document.getElementById(`status${i}`).value});
+  });
+  saveData(); renderPercentage(); alert("Attendance Saved");
+}
+
+function renderPercentage(){
+  let table=document.getElementById("percentTable");
+  table.innerHTML="";
+  students.forEach(s=>{
+    let records = attendance.filter(a=>a.roll===s.roll);
+    let total = records.length;
+    let present = records.filter(a=>a.status==="Present").length;
+    let percent = total===0?0:((present/total)*100).toFixed(2);
+    table.innerHTML+=`<tr><td>${s.name}</td><td>${s.roll}</td><td>${percent}%</td></tr>`;
+  });
+}
+
+function viewHistory(){
+  let date=document.getElementById("historyDate").value;
+  let table=document.getElementById("historyTable");
+  table.innerHTML="";
+  let filtered = attendance.filter(a=>a.date===date);
+  filtered.forEach(a=>{
+    table.innerHTML+=`<tr><td>${a.name}</td><td>${a.roll}</td><td>${a.date}</td><td class="${a.status==="Present"?"present":"absent"}">${a.status}</td></tr>`;
+  });
+}
+
+function deleteStudent(index){
+  if(!confirm("Delete this student?")) return;
+  let removed = students.splice(index,1)[0];
+  attendance = attendance.filter(a=>a.roll!==removed.roll);
+  saveData(); renderStudents(); viewHistory();
+}
+
+renderStudents();
+</script>
+
+</body>
+</html>
